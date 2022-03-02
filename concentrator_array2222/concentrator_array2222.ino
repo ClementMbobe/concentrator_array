@@ -77,28 +77,45 @@ void loop() {
   unsigned long currentMillis = millis();
   unsigned long currentMillis1 = millis();
   LpressureValue = analogRead(LpressureInput);//read pressure value
-  
+  Serial.print("read Lvalue =");
+  Serial.print(LpressureValue);
+  Serial.print(",");
   HpressureValue = analogRead(HpressureInput);//read pressure value
-  
+  Serial.print("read Hvalue =");
+  Serial.print(HpressureValue);
+  Serial.print(",");
   LpressureValue = ((LpressureValue - LpressureZero)*LpressuretransducerMaxPSI)/(LpressureMax - LpressureZero);//convert pressure value to PSi
+  Serial.print("Low output pressure =");
+  Serial.print (LpressureValue,1);  
+  Serial.print(",");
   HpressureValue = ((HpressureValue - HpressureZero)*HpressuretransducerMaxPSI)/(HpressureMax - HpressureZero);//convert pressure value to PSI
+  Serial.print(" High output pressure1 =");
+  Serial.println(HpressureValue,1);
   if(LpressureValue < 0)          //set all negative pressures to zero
     LpressureValue = 0;
   if(HpressureValue < 0)       //set all negative pressures to zero
     HpressureValue = 0;
-  if (LpressureValue > 8 && HpressureValue < 50)  
-    compressorSol_on();         // turn on compressor and valve
+  if (LpressureValue > 8 && HpressureValue < 50){  
+    compressorSol_on();}         // turn on compressor and valve
   if(LpressureValue <4)
    compressorSol_off();         // turn off compressor and valve and turns on all concentrators and relief solenoid valve
-  if (LpressureValue > 10)
-   all_conc_off();
-  if ((HpressureValue < 40) && (LpressureValue < 8) || (HpressureValue < 50)){
+  if (LpressureValue > 10 && HpressureValue <71){
+    all_conc_off();
+    compressorSol_on();
+    delay(1000);
+  }
+  if (LpressureValue > 10 && HpressureValue >70){
+    all_off();
+  }
+  if ((HpressureValue < 50) &&(LpressureValue > 4)&& (LpressureValue < 8)){
    all_on();}
    
   
- //if high pressure is greater tahn 50 but less than 70 and lowpressure is less than 8 do the following
-  if((HpressureValue >49) && (HpressureValue < 61) && (LpressureValue < 8)){ 
+ //if high pressure is greater tahn 50 but less than 61 and lowpressure is less than 8 do the following
+  if((HpressureValue >50) && (HpressureValue < 61) && (LpressureValue < 8)){ 
    runTime=currentMillis - previousMillis;//time taken by left and right side concentrators when HpressureValue is greater than 50 but < 70  
+   Serial.print("RunTime ="); 
+   Serial.println(runTime,1); 
    if(runTime < interval) { 
       if(a>0.8 && b>0.8 && c>0.8){// if all concentrators on the left side are connected
        leftHS_concentrators_on();
@@ -119,8 +136,10 @@ void loop() {
      }
 
  
- if((HpressureValue >59) && (HpressureValue < 71) && (LpressureValue < 8)){ 
-  runTime1=currentMillis1 - previousMillis1;// timing for turing two sockets whwn prssure is between 60 and 70
+ if((HpressureValue >61) && (HpressureValue < 71) && (LpressureValue < 8)){ 
+ runTime1=currentMillis1 - previousMillis1;// timing for turing two sockets whwn prssure is between 60 and 70
+ Serial.print("RunTime1 ="); 
+ Serial.println(runTime1,1);    
     if(runTime1 < interval1){
       if (a>0.8 && b>0.8){
           left1 ();
@@ -179,8 +198,7 @@ void loop() {
       
     }
         
- if(HpressureValue > 50 && HpressureValue < 71 && LpressureValue > 8){
-      //all_conc_off();
+ if((HpressureValue > 50) && (HpressureValue < 70) && (LpressureValue > 8)){
       compressorSol_on();  
   }
 
@@ -189,24 +207,7 @@ void loop() {
   all_off();// turm off all concentrators, compressor and valve
   conc_current_check();
   }
- 
- Serial.print("read Lvalue =");
- Serial.print(LpressureValue);
- Serial.print(",");
- Serial.print("read Hvalue =");
- Serial.print(HpressureValue);
- Serial.print(",");
-  
- Serial.print("Low output pressure =");
- Serial.print (LpressureValue,1);  
- Serial.print(",");
- Serial.print(" High output pressure1 =");
- Serial.println(HpressureValue,1);
- Serial.print("RunTime ="); 
- Serial.println(runTime,1);  
- Serial.print("RunTime1 ="); 
- Serial.println(runTime1,1); 
- delay(sensorreadDelay);
+delay(sensorreadDelay);
 }
 void compressorSol_off(){ //this function switches on all concentrators and switches off the outlet compressor
   
@@ -494,11 +495,7 @@ void leftHS_concentrators_on(){
   lcd.print("off: ");
   lcd.setCursor(5,1);   
   lcd.println("All");
-  //delay(2000);
-  //digitalWrite(sol1,HIGH);
-  //delay(5000);
-  //digitalWrite(sol1,LOW);
- 
+  
   }
  void all_conc_off(){
   digitalWrite(SSR1,LOW);
@@ -681,13 +678,11 @@ void alt9 (){
   
  
 void conc_current_check(){// measres current drawn by a concentrator and stores the value in a variable
-  //int a,b,c,d,e,f;
-  //if (Irms<0.3){
-    //Irms=0;} 
+ 
   all_conc_off(); 
   emon1.current(2, 111.1);             // Current: input pin, calibration.
   digitalWrite(SSR1,HIGH);
-  delay(1000);
+  delay(700);
   Irms = emon1.calcIrms(1480);  // Calculate Irms only
   digitalWrite(SSR1,LOW);
 //   if (Irms>0.8){
@@ -697,7 +692,7 @@ void conc_current_check(){// measres current drawn by a concentrator and stores 
 //     g=0;} 
 
   digitalWrite(SSR1,HIGH);
-  delay(1000);
+  delay(700);
   Irms = emon1.calcIrms(1480);  // Calculate Irms only
   lcd.clear();
   pressurePrinting ();
@@ -713,7 +708,7 @@ void conc_current_check(){// measres current drawn by a concentrator and stores 
      a=0;}
      
   digitalWrite(SSR2,HIGH);
-  delay(1000);
+  delay(700);
   Irms = emon1.calcIrms(1480);  // Calculate Irms only
   pressurePrinting ();
   lcd.setCursor(0,1);   
@@ -728,7 +723,7 @@ void conc_current_check(){// measres current drawn by a concentrator and stores 
     b=0;}
 
   digitalWrite(SSR3,HIGH);
-  delay(1000);
+  delay(700);
   Irms = emon1.calcIrms(1480);  // Calculate Irms only
   pressurePrinting ();
   lcd.setCursor(0,1);   
@@ -743,7 +738,7 @@ void conc_current_check(){// measres current drawn by a concentrator and stores 
     c=0;}
 
   digitalWrite(SSR5,HIGH);
-  delay(1000);
+  delay(700);
   Irms = emon1.calcIrms(1480);  // Calculate Irms only
   pressurePrinting ();
   lcd.setCursor(0,1);   
@@ -758,7 +753,7 @@ void conc_current_check(){// measres current drawn by a concentrator and stores 
     d=0;}
 
   digitalWrite(SSR6,HIGH);
-  delay(1000);
+  delay(700);
   Irms = emon1.calcIrms(1480);  // Calculate Irms only
   pressurePrinting ();
   lcd.setCursor(0,1);   
@@ -772,7 +767,7 @@ void conc_current_check(){// measres current drawn by a concentrator and stores 
    else{
     e=0;}
   digitalWrite(SSR7,HIGH);
-  delay(1000);
+  delay(700);
   Irms = emon1.calcIrms(1480);  // Calculate Irms only
   pressurePrinting ();
   lcd.setCursor(0,1);   
@@ -971,6 +966,7 @@ void alt_right_on (){ // select other alternative to turn on if no concentrator 
              half_on9 ();
              break;
            }
+           
          if((d+e+f)>0.8){
               rightHS_concentrators_on();
               break;
@@ -1023,6 +1019,51 @@ void alt2ls_on(){
          alt9 ();
          break;
       }
+
+       if (runTime1< interval1) {
+         if (d>0.8 && e>0.8){
+           right1 ();
+           break;
+          }
+         if (d>0.8 && f>0.8){
+           right2 ();
+           break;
+          }
+         if (e>0.8 && f>0.8){
+           right3 ();
+           break;
+         }      
+          }
+
+        if (runTime1> interval1 && runTime1 < interval21) {
+           if (d>0.8 && f>0.8){
+             right2 ();
+             break;
+           }
+           if (d>0.8 && e>0.8){
+             right1 ();
+             break;
+           }
+           if (e>0.8 && f>0.8){
+             right3 ();
+             break;
+           }      
+          }
+          if (runTime1> interval21 && runTime1 < interval3) {
+           if (e>0.8 && f>0.8){
+             right3 ();
+             break;
+           }      
+           if (d>0.8 && f>0.8){
+             right2 ();
+             break;
+           }
+           if (d>0.8 && e>0.8){
+             right1 ();
+             break;
+           }
+          }
+       
        if((a+b+c)>0.8){
               leftHS_concentrators_on();
               break;
@@ -1066,7 +1107,6 @@ void alt2rs_on(){
   if (a>0.8 && f>0.8){
            alt3 ();
            break;
-           break;
         }
 
   if (a>0.8 && e>0.8){
@@ -1076,7 +1116,50 @@ void alt2rs_on(){
   if (a>0.8 && d>0.8){
           alt1 ();
           break;
-         }  
+         } 
+  if (runTime1> interval3 && runTime1 < interval4){
+   if (a>0.8 && b>0.8){
+  
+          left1 ();
+           break;
+         }
+    if (a>0.8 && c>0.8){
+          left2 ();
+           break;
+          }
+    if (b>0.8 && c>0.8){
+          left3 ();
+           break;
+          }}
+  if (runTime1> interval4 && runTime1 < interval5) {
+    if (a>0.8 && c>0.8){
+          left2 ();
+           break;}
+    if (a>0.8 && b>0.8){
+          left1 ();
+           break;
+         }
+    if (a>0.8 && d>0.8){
+          alt1 ();
+          break;
+         }}
+          
+   if (runTime1> interval5 && runTime1 < interval6) {
+    if (b>0.8 && c>0.8){
+          left3 ();
+           break;
+          }
+    if (a>0.8 && c>0.8){
+          left2 ();
+           break;
+          }
+    if (a>0.8 && b>0.8){
+         left1 ();
+           break;
+         }      
+          }
+
+          
   if((d+e+f)>0.8){
    rightHS_concentrators_on();
    break;
@@ -1104,7 +1187,8 @@ void running_concPrinting(){
   lcd.setCursor(0,1);   
   lcd.print("Running: ");
   lcd.setCursor(9,1);   
-  }      
+  }
+ 
        
       
      
